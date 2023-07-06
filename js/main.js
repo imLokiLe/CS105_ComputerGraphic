@@ -32,10 +32,8 @@ import {
 
 var cameraPersp, currentCamera;
 var backgroundGUI;
-var typeModel;
-var firstFlat = true;
 var scene, renderer, control, orbit, gui, texture, raycaster, Grid, specular, normal;
-var meshPlane, light, helper, hemiLight, LightColorGUI, LightIntensityGUI, LightShadowGUI, LightXGUI, LightYGUI, LightZGUI, LighthelperGUI, ObjColorGUI, folderLight, nameLight;
+var meshPlane, light, helper, hemiLight, LightColorGUI, LightIntensityGUI, LightShadowGUI, LightXGUI, LightYGUI, LightZGUI, ObjColorGUI, folderLight, nameLight;
 var textureLoader = new THREE.TextureLoader(),
 	mouse = new THREE.Vector2();
 var LightSwitch = false,
@@ -44,7 +42,7 @@ var LightSwitch = false,
 var animationID;
 var composer, afterimagePass, isPostProcessing = false;
 var water, sun, sky;
-var background_galaxy;
+var background_points;
 
 // A bunch of shapes
 var BoxGeometry = new THREE.BoxGeometry(100, 100, 100, 30, 30, 30);
@@ -128,8 +126,8 @@ function init() {
 
 	scene = new THREE.Scene();
 	scene.background = color_000000;
-	background_galaxy = Particle_Star_Field();
-	scene.add(background_galaxy);
+	background_points = create_background_point();
+	scene.add(background_points);
 
 	// Grid
 	const planeSize = 2000;
@@ -172,9 +170,6 @@ function init() {
 		const minMaxGUIHelper = new MinMaxGUIHelper(currentCamera, "near", "far");
 		folderCam.add(minMaxGUIHelper, "min", 1, 500, 1).name("Near").onChange(updateCamera);
 		folderCam.add(minMaxGUIHelper, "max", 100, 6000, 10).name("Far").onChange(updateCamera);
-		folderCam.add(currentCamera.position, "x", -1000, 1000).name("Camera X").onChange(updateCamera);
-		folderCam.add(currentCamera.position, "y", -1000, 1000).name("Camera Y").onChange(updateCamera);
-		folderCam.add(currentCamera.position, "z", -1000, 1000).name("Camera Z").onChange(updateCamera);
 	}
 
 	ObjColorGUI = gui.addColor(new ColorGUIHelper(mesh.material, "color"), "value").name("Object Color");
@@ -292,23 +287,29 @@ function init() {
 	}
 }
 
-function Particle_Star_Field() {
-	var geometry = new THREE.Geometry();
-	var totalObjects = 30000;
+function create_background_point() {
+	const vertices = [];
+	const num_points = 30000;
+	for (let i = 0; i < num_points; i++) {
+		const x = THREE.MathUtils.randFloatSpread(3000);
+		const y = THREE.MathUtils.randFloatSpread(3000);
+		const z = THREE.MathUtils.randFloatSpread(3000);
 
-	for (let i = 0; i < totalObjects; i ++) 
-	{ 
-	var vertex = new THREE.Vector3();
-	vertex.x = THREE.MathUtils.randFloatSpread(4500);
-	vertex.y = THREE.MathUtils.randFloatSpread(4500);
-	vertex.z = THREE.MathUtils.randFloatSpread(4500);
-	geometry.vertices.push( vertex );
+		vertices.push(x, y, z);
 	}
 
-	var material = new THREE.ParticleBasicMaterial( { size: 2 });
-	var particles = new THREE.ParticleSystem( geometry, material );
-		
-	return particles;
+	const background_geometry = new THREE.BufferGeometry();
+	background_geometry.setAttribute(
+		"position",
+		new THREE.Float32BufferAttribute(vertices, 3)
+	);
+
+	const background_material = new THREE.PointsMaterial({ color: 0xffffff });
+	const background_points = new THREE.Points(
+		background_geometry,
+		background_material
+	);
+	return background_points;
 }
 
 function render() {
@@ -382,29 +383,13 @@ function addMesh(meshID) {
 }
 window.addMesh = addMesh;
 
-function removeGeometry(){
-	pre_material != 1 ? scene.remove(mesh) : scene.remove(point);
-	gui.remove(ObjColorGUI);
-
-	if (control.object && (control.object.type == "Mesh" || control.object.type == "Points"))
-		control.detach();
-	pre_material = null;
-	type = null;
-	render();
-}
-window.removeGeometry = removeGeometry;
 
 function setMaterial(materialID) {
 	type = materialID;
 
 	// Remove current object
 	pre_material != 1 ? scene.remove(mesh) : scene.remove(point);
-	if (firstFlat){
-		gui.remove(ObjColorGUI);
-		firstFlat = false;
-	}
-	if(pre_material != null) 
-		gui.remove(ObjColorGUI);
+	gui.remove(ObjColorGUI);
 
 	if (control.object && (control.object.type == "Mesh" || control.object.type == "Points"))
 		control.detach();
@@ -503,7 +488,7 @@ function setInstantTexture(TextureID){
 			texture = loader.load('./textures/brick.jpg', render);
 			break;
 		case 2:
-			texture = loader.load('./textures/Wood.jpg', render);
+			texture = loader.load('./textures/concrete.jpg', render);
 			break;
 		case 3:
 			texture = loader.load('./textures/earth_atmos_2048.jpg', render);
@@ -548,14 +533,14 @@ function setLight(LightID) {
 		case 2:
 			light = new THREE.DirectionalLight("#F5F5F5", intensity);
 			light.castShadow = shadow;
-			light.shadow.mapSize.width = 2048; 
-			light.shadow.mapSize.height = 2048; 
+			light.shadow.mapSize.width = 1024; // default
+			light.shadow.mapSize.height = 1024; // default
 			light.shadow.camera.left = -200;
 			light.shadow.camera.right = 200;
 			light.shadow.camera.top = 200;
 			light.shadow.camera.bottom = -200;
-			light.shadow.camera.near = 0.5; 
-			light.shadow.camera.far = 500; 
+			light.shadow.camera.near = 0.5; // default
+			light.shadow.camera.far = 500; // default
 			nameLight = folderLight.add({ title: 'Directional Light' }, 'title').name('');
 			helper = new THREE.DirectionalLightHelper(light, 10);
 			LightSwitch = true;
@@ -576,11 +561,10 @@ function setLight(LightID) {
 
 	if(LightSwitch){
 		// helper = new THREE.CameraHelper( light.shadow.camera );
-		light.position.set(0, 200, 0);	
 		scene.add( helper );
+		light.position.set(0, 200, 0);	
 		scene.add(meshPlane);
 		scene.add(light);
-		render();
 		
 		if (type == 3 || type == 4)
 			setMaterial(type);
@@ -609,14 +593,10 @@ window.setLight = setLight;
 
 
 function setControlTransform(mesh) {
-    control.attach(mesh);
-    scene.add(control);
-	
-	var keyStates = {};
+	control.attach(mesh);
+	scene.add(control);
 
-	window.addEventListener("keydown", function(event) {
-		keyStates[event.keyCode] = true;
-
+	window.addEventListener("keydown", function (event) {
 		switch (event.keyCode) {
 			case 84: // T
 				eventTranslate();
@@ -629,132 +609,6 @@ function setControlTransform(mesh) {
 				break;
 		}
 	});
-
-	window.addEventListener("keyup", function(event) {
-		keyStates[event.keyCode] = false;
-	});
-
-    function update() {
-        if (control.mode === "translate") {
-            var speed = 1;
-
-            if (keyStates[88]) { // X
-                if (keyStates[16]) { // Shift
-					mesh.position.x += speed; 
-				} else {
-					mesh.position.x -= speed; 
-				}
-            }
-            if (keyStates[89]) { // Y
-				if (keyStates[16]) { // Shift
-					mesh.position.y += speed;
-				} else {
-					mesh.position.y -= speed;
-				}
-            }
-            if (keyStates[90]) { // Z
-                if (keyStates[16]) { // Shift
-					mesh.position.z += speed;
-				} else {
-					mesh.position.z -= speed;
-				}
-            }
-            if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
-                if (keyStates[16]) { // Shift
-					mesh.position.x += speed; 
-					mesh.position.y += speed;
-					mesh.position.z += speed;
-				} else {
-					mesh.position.x -= speed; 
-					mesh.position.y -= speed;
-					mesh.position.z -= speed;
-				}
-            }
-        }
-
-		if (control.mode === "rotate") {
-			var speed = Math.PI / 180; // Tốc độ xoay (đơn vị radian)
-		
-			if (keyStates[88]) { // X
-			  if (keyStates[16]) { // Shift
-				mesh.rotation.x -= speed; // Xoay ngược chiều kim đồng hồ
-			  } else {
-				mesh.rotation.x += speed; // Xoay theo chiều kim đồng hồ
-			  }
-			}
-			if (keyStates[89]) { // Y
-				if (keyStates[16]) { // Shift
-				  mesh.rotation.y -= speed; // Xoay ngược chiều kim đồng hồ
-				} else {
-				  mesh.rotation.y += speed; // Xoay theo chiều kim đồng hồ
-				}
-			}
-			if (keyStates[90]) { // Z
-				if (keyStates[16]) { // Shift
-				  mesh.rotation.z -= speed; // Xoay ngược chiều kim đồng hồ
-				} else {
-				  mesh.rotation.z += speed; // Xoay theo chiều kim đồng hồ
-				}
-			}
-			if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
-                if (keyStates[16]) { // Shift
-					mesh.rotation.x -= speed;
-					mesh.rotation.y -= speed;
-					mesh.rotation.z -= speed;
-				} else {
-					mesh.rotation.x += speed;
-					mesh.rotation.y += speed;
-					mesh.rotation.z += speed;
-				}
-            }
-		  }
-		
-		if (control.mode === "scale") {
-			var speed = 0.01; // Hệ số tỷ lệ
-		
-			if (keyStates[88]) { // X
-				if (keyStates[16]) { // Shift
-				mesh.scale.x -= speed; // Giảm tỷ lệ theo trục X
-				} else {
-				mesh.scale.x += speed; // Tăng tỷ lệ theo trục X
-				}
-			}
-			if (keyStates[89]) { // Y
-				if (keyStates[16]) { // Shift
-				mesh.scale.y -= speed; // Giảm tỷ lệ theo trục Y
-				} else {
-				mesh.scale.y += speed; // Tăng tỷ lệ theo trục Y
-				}
-			}
-			if (keyStates[90]) { // Z
-				if (keyStates[16]) { // Shift
-				mesh.scale.z -= speed; // Giảm tỷ lệ theo trục Z
-				} else {
-				mesh.scale.z += speed; // Tăng tỷ lệ theo trục Z
-				}
-			}
-			if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
-				if (keyStates[16]) { // Shift
-				mesh.scale.x -= speed; 
-				mesh.scale.y -= speed; 
-				mesh.scale.z -= speed; 
-				} else {
-				mesh.scale.x += speed; 
-				mesh.scale.y += speed; 
-				mesh.scale.z += speed; 
-				}
-			}
-		}
-
-		render();
-    }
-
-    function AnimateTransform() {
-        requestAnimationFrame(AnimateTransform);
-        update();
-    }
-
-    AnimateTransform();
 }
 
 function eventTranslate() {
@@ -770,8 +624,7 @@ window.eventRotate = eventRotate;
 function eventScale() {
 	control.setMode("scale");
 }
-window.eventScale = eventScale;  
-
+window.eventScale = eventScale;
 
 document.getElementById("rendering").addEventListener("mousedown", onDocumentMouseDown, false);
 
@@ -859,6 +712,9 @@ function animation1() {
 	mesh.rotation.y += Math.abs(ani1_step / 10);
 	mesh.rotation.z += Math.abs(ani1_step / 10);
 
+	point.rotation.copy(mesh.rotation);
+	point.position.copy(mesh.position);
+
 	let distance = Math.abs(Math.floor(mesh.position.y - root.y));
 
 	if (distance % 10 == 0) {
@@ -873,8 +729,9 @@ function animation1() {
 	animationID = requestAnimationFrame(animation1);
 }
 
-var ani2_step = 0.05;
+var ani2_step = 0;
 function animation2() {
+	ani2_step += 0.05;
 	let width = box.max.x - box.min.x;
 	mesh.position.x = width * Math.cos(ani2_step) + root.x;
 	mesh.position.y = width * Math.sin(ani2_step) + root.y;
@@ -1014,16 +871,7 @@ var animalmesh;
 function loadmodel(id){
 	
 	root = mesh.position.clone();
-	if(pre_material != null){
-		removeGeometry();
-	}
 	scene.add(hemiLight);
-	if(typeModel == 3){
-		scene.remove(water);
-		scene.remove(sky);
-		scene.add(Grid);
-		scene.add(background_galaxy);
-	}
 	
 	let pivot = new THREE.Group();
 	
@@ -1068,7 +916,7 @@ function loadmodel(id){
 			break;
 		case 3:
 			scene.remove(Grid);
-			scene.remove(background_galaxy);
+			scene.remove(background_points);
 			scene.add(water);
 			scene.add(sky);
 			updateSun();
@@ -1106,14 +954,13 @@ function loadmodel(id){
 				scene.remove(pivots[i]);
 			pivots = [];
 			scene.add(Grid);
-			scene.add(background_galaxy);
+			scene.add(background_points);
 			scene.remove(water);
 			scene.remove(sky);
 			render();
 			break;
 	
 	}
-	typeModel = id;
 }
 
 window.loadmodel = loadmodel;
