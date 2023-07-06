@@ -1,0 +1,11 @@
+Model Information:
+* title:	Plushie Shark
+* source:	https://sketchfab.com/3d-models/plushie-shark-875414d5e45c42f9a5323ba8a8beed19
+* author:	QuazrSCI (https://sketchfab.com/QuazrSCI)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Plushie Shark" (https://sketchfab.com/3d-models/plushie-shark-875414d5e45c42f9a5323ba8a8beed19) by QuazrSCI (https://sketchfab.com/QuazrSCI) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
