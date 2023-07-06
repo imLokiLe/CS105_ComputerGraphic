@@ -1,0 +1,11 @@
+Model Information:
+* title:	Plane
+* source:	https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9
+* author:	osmosikum (https://sketchfab.com/osmosikum)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Plane" (https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9) by osmosikum (https://sketchfab.com/osmosikum) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
