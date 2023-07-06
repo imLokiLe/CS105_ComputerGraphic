@@ -32,8 +32,10 @@ import {
 
 var cameraPersp, currentCamera;
 var backgroundGUI;
+var typeModel;
+var firstFlat = true;
 var scene, renderer, control, orbit, gui, texture, raycaster, Grid, specular, normal;
-var meshPlane, light, helper, hemiLight, LightColorGUI, LightIntensityGUI, LightShadowGUI, LightXGUI, LightYGUI, LightZGUI, ObjColorGUI, folderLight, nameLight;
+var meshPlane, light, helper, hemiLight, LightColorGUI, LightIntensityGUI, LightShadowGUI, LightXGUI, LightYGUI, LightZGUI, LighthelperGUI, ObjColorGUI, folderLight, nameLight;
 var textureLoader = new THREE.TextureLoader(),
 	mouse = new THREE.Vector2();
 var LightSwitch = false,
@@ -42,7 +44,7 @@ var LightSwitch = false,
 var animationID;
 var composer, afterimagePass, isPostProcessing = false;
 var water, sun, sky;
-var background_points;
+var background_galaxy;
 
 // A bunch of shapes
 var BoxGeometry = new THREE.BoxGeometry(100, 100, 100, 30, 30, 30);
@@ -126,8 +128,8 @@ function init() {
 
 	scene = new THREE.Scene();
 	scene.background = color_000000;
-	background_points = create_background_point();
-	scene.add(background_points);
+	background_galaxy = Particle_Star_Field();
+	scene.add(background_galaxy);
 
 	// Grid
 	const planeSize = 2000;
@@ -170,6 +172,9 @@ function init() {
 		const minMaxGUIHelper = new MinMaxGUIHelper(currentCamera, "near", "far");
 		folderCam.add(minMaxGUIHelper, "min", 1, 500, 1).name("Near").onChange(updateCamera);
 		folderCam.add(minMaxGUIHelper, "max", 100, 6000, 10).name("Far").onChange(updateCamera);
+		folderCam.add(currentCamera.position, "x", -1000, 1000).name("Camera X").onChange(updateCamera);
+		folderCam.add(currentCamera.position, "y", -1000, 1000).name("Camera Y").onChange(updateCamera);
+		folderCam.add(currentCamera.position, "z", -1000, 1000).name("Camera Z").onChange(updateCamera);
 	}
 
 	ObjColorGUI = gui.addColor(new ColorGUIHelper(mesh.material, "color"), "value").name("Object Color");
@@ -287,29 +292,23 @@ function init() {
 	}
 }
 
-function create_background_point() {
-	const vertices = [];
-	const num_points = 30000;
-	for (let i = 0; i < num_points; i++) {
-		const x = THREE.MathUtils.randFloatSpread(3000);
-		const y = THREE.MathUtils.randFloatSpread(3000);
-		const z = THREE.MathUtils.randFloatSpread(3000);
+function Particle_Star_Field() {
+	var geometry = new THREE.Geometry();
+	var totalObjects = 30000;
 
-		vertices.push(x, y, z);
+	for (let i = 0; i < totalObjects; i ++) 
+	{ 
+	var vertex = new THREE.Vector3();
+	vertex.x = THREE.MathUtils.randFloatSpread(4500);
+	vertex.y = THREE.MathUtils.randFloatSpread(4500);
+	vertex.z = THREE.MathUtils.randFloatSpread(4500);
+	geometry.vertices.push( vertex );
 	}
 
-	const background_geometry = new THREE.BufferGeometry();
-	background_geometry.setAttribute(
-		"position",
-		new THREE.Float32BufferAttribute(vertices, 3)
-	);
-
-	const background_material = new THREE.PointsMaterial({ color: 0xffffff });
-	const background_points = new THREE.Points(
-		background_geometry,
-		background_material
-	);
-	return background_points;
+	var material = new THREE.ParticleBasicMaterial( { size: 2 });
+	var particles = new THREE.ParticleSystem( geometry, material );
+		
+	return particles;
 }
 
 function render() {
@@ -383,13 +382,29 @@ function addMesh(meshID) {
 }
 window.addMesh = addMesh;
 
+function removeGeometry(){
+	pre_material != 1 ? scene.remove(mesh) : scene.remove(point);
+	gui.remove(ObjColorGUI);
+
+	if (control.object && (control.object.type == "Mesh" || control.object.type == "Points"))
+		control.detach();
+	pre_material = null;
+	type = null;
+	render();
+}
+window.removeGeometry = removeGeometry;
 
 function setMaterial(materialID) {
 	type = materialID;
 
 	// Remove current object
 	pre_material != 1 ? scene.remove(mesh) : scene.remove(point);
-	gui.remove(ObjColorGUI);
+	if (firstFlat){
+		gui.remove(ObjColorGUI);
+		firstFlat = false;
+	}
+	if(pre_material != null) 
+		gui.remove(ObjColorGUI);
 
 	if (control.object && (control.object.type == "Mesh" || control.object.type == "Points"))
 		control.detach();
@@ -488,7 +503,7 @@ function setInstantTexture(TextureID){
 			texture = loader.load('./textures/brick.jpg', render);
 			break;
 		case 2:
-			texture = loader.load('./textures/concrete.jpg', render);
+			texture = loader.load('./textures/Wood.jpg', render);
 			break;
 		case 3:
 			texture = loader.load('./textures/earth_atmos_2048.jpg', render);
@@ -533,14 +548,14 @@ function setLight(LightID) {
 		case 2:
 			light = new THREE.DirectionalLight("#F5F5F5", intensity);
 			light.castShadow = shadow;
-			light.shadow.mapSize.width = 1024; // default
-			light.shadow.mapSize.height = 1024; // default
+			light.shadow.mapSize.width = 2048; 
+			light.shadow.mapSize.height = 2048; 
 			light.shadow.camera.left = -200;
 			light.shadow.camera.right = 200;
 			light.shadow.camera.top = 200;
 			light.shadow.camera.bottom = -200;
-			light.shadow.camera.near = 0.5; // default
-			light.shadow.camera.far = 500; // default
+			light.shadow.camera.near = 0.5; 
+			light.shadow.camera.far = 500; 
 			nameLight = folderLight.add({ title: 'Directional Light' }, 'title').name('');
 			helper = new THREE.DirectionalLightHelper(light, 10);
 			LightSwitch = true;
@@ -561,10 +576,11 @@ function setLight(LightID) {
 
 	if(LightSwitch){
 		// helper = new THREE.CameraHelper( light.shadow.camera );
-		scene.add( helper );
 		light.position.set(0, 200, 0);	
+		scene.add( helper );
 		scene.add(meshPlane);
 		scene.add(light);
+		render();
 		
 		if (type == 3 || type == 4)
 			setMaterial(type);
@@ -593,10 +609,14 @@ window.setLight = setLight;
 
 
 function setControlTransform(mesh) {
-	control.attach(mesh);
-	scene.add(control);
+    control.attach(mesh);
+    scene.add(control);
+	
+	var keyStates = {};
 
-	window.addEventListener("keydown", function (event) {
+	window.addEventListener("keydown", function(event) {
+		keyStates[event.keyCode] = true;
+
 		switch (event.keyCode) {
 			case 84: // T
 				eventTranslate();
@@ -609,6 +629,132 @@ function setControlTransform(mesh) {
 				break;
 		}
 	});
+
+	window.addEventListener("keyup", function(event) {
+		keyStates[event.keyCode] = false;
+	});
+
+    function update() {
+        if (control.mode === "translate") {
+            var speed = 1;
+
+            if (keyStates[88]) { // X
+                if (keyStates[16]) { // Shift
+					mesh.position.x += speed; 
+				} else {
+					mesh.position.x -= speed; 
+				}
+            }
+            if (keyStates[89]) { // Y
+				if (keyStates[16]) { // Shift
+					mesh.position.y += speed;
+				} else {
+					mesh.position.y -= speed;
+				}
+            }
+            if (keyStates[90]) { // Z
+                if (keyStates[16]) { // Shift
+					mesh.position.z += speed;
+				} else {
+					mesh.position.z -= speed;
+				}
+            }
+            if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
+                if (keyStates[16]) { // Shift
+					mesh.position.x += speed; 
+					mesh.position.y += speed;
+					mesh.position.z += speed;
+				} else {
+					mesh.position.x -= speed; 
+					mesh.position.y -= speed;
+					mesh.position.z -= speed;
+				}
+            }
+        }
+
+		if (control.mode === "rotate") {
+			var speed = Math.PI / 180; // Tốc độ xoay (đơn vị radian)
+		
+			if (keyStates[88]) { // X
+			  if (keyStates[16]) { // Shift
+				mesh.rotation.x -= speed; // Xoay ngược chiều kim đồng hồ
+			  } else {
+				mesh.rotation.x += speed; // Xoay theo chiều kim đồng hồ
+			  }
+			}
+			if (keyStates[89]) { // Y
+				if (keyStates[16]) { // Shift
+				  mesh.rotation.y -= speed; // Xoay ngược chiều kim đồng hồ
+				} else {
+				  mesh.rotation.y += speed; // Xoay theo chiều kim đồng hồ
+				}
+			}
+			if (keyStates[90]) { // Z
+				if (keyStates[16]) { // Shift
+				  mesh.rotation.z -= speed; // Xoay ngược chiều kim đồng hồ
+				} else {
+				  mesh.rotation.z += speed; // Xoay theo chiều kim đồng hồ
+				}
+			}
+			if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
+                if (keyStates[16]) { // Shift
+					mesh.rotation.x -= speed;
+					mesh.rotation.y -= speed;
+					mesh.rotation.z -= speed;
+				} else {
+					mesh.rotation.x += speed;
+					mesh.rotation.y += speed;
+					mesh.rotation.z += speed;
+				}
+            }
+		  }
+		
+		if (control.mode === "scale") {
+			var speed = 0.01; // Hệ số tỷ lệ
+		
+			if (keyStates[88]) { // X
+				if (keyStates[16]) { // Shift
+				mesh.scale.x -= speed; // Giảm tỷ lệ theo trục X
+				} else {
+				mesh.scale.x += speed; // Tăng tỷ lệ theo trục X
+				}
+			}
+			if (keyStates[89]) { // Y
+				if (keyStates[16]) { // Shift
+				mesh.scale.y -= speed; // Giảm tỷ lệ theo trục Y
+				} else {
+				mesh.scale.y += speed; // Tăng tỷ lệ theo trục Y
+				}
+			}
+			if (keyStates[90]) { // Z
+				if (keyStates[16]) { // Shift
+				mesh.scale.z -= speed; // Giảm tỷ lệ theo trục Z
+				} else {
+				mesh.scale.z += speed; // Tăng tỷ lệ theo trục Z
+				}
+			}
+			if (keyStates[88] && keyStates[89] && keyStates[90]) { // XYZ
+				if (keyStates[16]) { // Shift
+				mesh.scale.x -= speed; 
+				mesh.scale.y -= speed; 
+				mesh.scale.z -= speed; 
+				} else {
+				mesh.scale.x += speed; 
+				mesh.scale.y += speed; 
+				mesh.scale.z += speed; 
+				}
+			}
+		}
+
+		render();
+    }
+
+    function AnimateTransform() {
+        requestAnimationFrame(AnimateTransform);
+        update();
+    }
+
+    AnimateTransform();
 }
 
 function eventTranslate() {
@@ -624,7 +770,8 @@ window.eventRotate = eventRotate;
 function eventScale() {
 	control.setMode("scale");
 }
-window.eventScale = eventScale;
+window.eventScale = eventScale;  
+
 
 document.getElementById("rendering").addEventListener("mousedown", onDocumentMouseDown, false);
 
@@ -656,17 +803,14 @@ function onDocumentMouseDown(event) {
 	render();
 }
 
+//Animation 
 var root; //vị trí gốc của đối tượng để sử dụng trong animation.
-var pivots = [], //lưu trữ các pivot (trục quay) của đối tượng.
-	mixer = new THREE.AnimationMixer(scene); // tạo ra với scene để xử lý các animation.
-var animalLoader = new GLTFLoader(); //tải các mô hình GLTF
 var type_animation = 0; // lưu trữ loại animation đang chạy.
 var box = new THREE.Box3(); //để tính toán và lưu trữ hình hộp chứa đối tượng.
-var clock = new THREE.Clock();
 function animation(id) {
 	isPostProcessing = false;
 	scene.add(Grid);
-	box.setFromObject(type == 1 ? point : mesh);
+	box.setFromObject(mesh);
 
 	type_animation = id;
 
@@ -703,35 +847,40 @@ function animation(id) {
 }
 window.animation = animation;
 
-var ani1_step = 0.25;
+var radius = Math.floor(Math.random() * (700 - 100 + 1)) + 3; // Bán kính của quỹ đạo tròn
+var speed = 0.01; // Tốc độ di chuyển
+var angle = 0; // Góc xoay hiện tại
 function animation1() {
-	mesh.position.y += ani1_step;
-	mesh.position.z += ani1_step * 3;
-
-	mesh.rotation.x += Math.abs(ani1_step / 10);
-	mesh.rotation.y += Math.abs(ani1_step / 10);
-	mesh.rotation.z += Math.abs(ani1_step / 10);
-
-	point.rotation.copy(mesh.rotation);
+	// Tính toán vị trí mới dựa trên góc xoay hiện tại và bán kính
+	var x = radius * Math.cos(angle);
+	var z = radius * Math.sin(angle);
+	let y = root.y
+  
+	// Đặt vị trí của đối tượng
+	mesh.position.set(x, y, z);
 	point.position.copy(mesh.position);
 
-	let distance = Math.abs(Math.floor(mesh.position.y - root.y));
-
-	if (distance % 10 == 0) {
-	 	if (distance / 10 == 4)
-	 		ani1_step *= -1;
-		if (distance / 10 == 1 || distance / 10 == 2)
-		ani1_step *= 1;
+  
+	// Tăng góc xoay để di chuyển đối tượng trên quỹ đạo tròn
+	angle += speed;
+  
+	// Kiểm tra nếu đã quay một vòng đủ, đặt lại góc xoay về 0
+	if (angle >= 2 * Math.PI) {
+	  angle = 0;
 	}
+	mesh.rotation.x += 0.03;
+	mesh.rotation.y += 0.03;
+	point.rotation.copy(mesh.rotation);
 
 	render();
 
 	animationID = requestAnimationFrame(animation1);
 }
 
+
 var ani2_step = 0;
 function animation2() {
-	ani2_step += 0.05;
+	ani2_step += 0.05
 	let width = box.max.x - box.min.x;
 	mesh.position.x = width * Math.cos(ani2_step) + root.x;
 	mesh.position.y = width * Math.sin(ani2_step) + root.y;
@@ -748,8 +897,8 @@ function animation2() {
 function animation3() {
 	mesh.rotation.x = performance.now() * 0.001;
 	mesh.rotation.y = performance.now() * 0.001;
-	mesh.position.x = Math.sin(performance.now() * 0.001) * 0.75;
-	mesh.position.z = Math.cos(performance.now() * 0.001);
+	mesh.rotation.z = performance.now() * 0.001;
+	point.rotation.copy(mesh.rotation);
 
 	render();
 	animationID = requestAnimationFrame(animation3);
@@ -761,6 +910,7 @@ var isScalingUp = true; // Cờ để xác định trạng thái thu/phóng
 function animation4() {
 	// Xoay đối tượng
     mesh.rotation.y += rotationSpeed;
+	point.rotation.copy(mesh.rotation);
 
     // Thu/phóng đối tượng
     if (isScalingUp) {
@@ -777,101 +927,165 @@ function animation4() {
     if (mesh.scale.x >= 2 || mesh.scale.x <= 0.5) {
         isScalingUp = !isScalingUp;
     }
+	point.scale.copy(mesh.scale);
 
     render();
     animationID = requestAnimationFrame(animation4);
 }
 
+let morphTime = 0; // Biến thời gian hiệu ứng morphing
+const morphDuration = 1; // Thời gian hiệu ứng morphing (tính bằng giây)
+function morphingMesh(meshID) {
+	switch (meshID) {
+		case 1:
+			mesh.geometry = BoxGeometry;
+			break;
+		case 2:
+			mesh.geometry = SphereGeometry;
+			break;
+		case 3:
+			mesh.geometry = ConeGeometry;
+			break;
+		case 4:
+			mesh.geometry = CylinderGeometry;
+			break;
+		case 5:
+			mesh.geometry = TorusGeometry;
+			break;
+		case 6:
+			mesh.geometry = TorusKnotGeometry;
+			break;
+		case 7:
+			mesh.geometry = TeapotGeometry;
+			break;
+		case 8:
+			mesh.geometry = TetrahedronGeometry;
+			break;
+		case 9:
+			mesh.geometry = OctahedronGeometry;
+			break;
+		case 10:
+			mesh.geometry = DodecahedronGeometry;
+			break;
+		case 11:
+			mesh.geometry = IcosahedronGeometry;
+			break;
+		default:
+			break;
+	}
+	point.geometry = mesh.geometry;
+	render();
+}
+function animation5() {
+	mesh.rotation.x += 0.03;
+	mesh.rotation.y += 0.03;
+	mesh.rotation.z += 0.03;
+	point.rotation.copy(mesh.rotation);
+
+	morphTime += 0.01; // Tăng giá trị morphTime
+
+	if (morphTime >= morphDuration) {
+		morphTime = 0; // Đặt lại morphTime về 0
+		var currentGeometryIndex = Math.floor(Math.random() * (11 - 1 + 1)) + 1;
+		morphingMesh(currentGeometryIndex)
+		var currentMaterialIndex = Math.floor(Math.random() * (3 - 1 + 1)) + 1;
+		setMaterial(currentMaterialIndex)
+	}
+	render();
+	animationID = requestAnimationFrame(animation5);
+}
+
 var pathPoints = []; // Mảng chứa các điểm trên đường đi
 var currentPointIndex = 0; // Chỉ số điểm hiện tại trên đường đi
-var animationSpeed = 0.1; // Tốc độ di chuyển trên đường đi
-function animation5() {
-  // Thiết lập các điểm trên đường đi
-  pathPoints.push(new THREE.Vector3(0, 0, 0)); // Điểm 0
-  pathPoints.push(new THREE.Vector3(0, 0, 100)); // Điểm 1
-  pathPoints.push(new THREE.Vector3(100, 0, 100)); // Điểm 2
-  pathPoints.push(new THREE.Vector3(100, 0, 0)); // Điểm 3
-  pathPoints.push(new THREE.Vector3(0, 0, 0)); // Điểm 4
-
-  // Đặt vị trí ban đầu của đối tượng
-  mesh.position.copy(pathPoints[0]);
-
-  // Bắt đầu animation
-  PathAnimation();
-}
-function PathAnimation() {
-  // Di chuyển đối tượng theo đường đi
-  let targetPosition = pathPoints[currentPointIndex + 1];
-  mesh.position.lerp(targetPosition, animationSpeed);
-
-  // Kiểm tra nếu đối tượng gần đến điểm tiếp theo trên đường đi
-  if (mesh.position.distanceTo(targetPosition) < 0.05) {
-    currentPointIndex++;
-
-    // Kiểm tra nếu đối tượng đã đi qua toàn bộ đường đi, thì quay lại điểm đầu tiên
-    if (currentPointIndex >= pathPoints.length - 1) {
-      currentPointIndex = 0;
-    }
-  }
-
-  render();
-  animationID = requestAnimationFrame(PathAnimation);
-}
-
 var bounceHeight = 100; // Độ cao của nảy lò xo
 var bounceDuration = 0.5; // Thời gian nảy lò xo (tính bằng giây)
 var bounceTime = 0; // Thời gian đã trôi qua từ khi bắt đầu nảy lò xo
-function animation6() {
-	// Thiết lập các điểm trên đường đi
-	pathPoints.push(new THREE.Vector3(0, 10, 0)); // Điểm 0
-	pathPoints.push(new THREE.Vector3(30, 10, 30)); // Điểm 1
-	pathPoints.push(new THREE.Vector3(4, 10, 6)); // Điểm 2
-	pathPoints.push(new THREE.Vector3(2, 10, -2)); // Điểm 3
-	pathPoints.push(new THREE.Vector3(0, 10, 0)); // Điểm 4
-  
-	// Đặt vị trí ban đầu của đối tượng
-	mesh.position.copy(pathPoints[0]);
-  
-	animationBouncePath();
-  }
-function animationBouncePath() {
-  
-  // Di chuyển đối tượng theo đường đi
-  let targetPosition = pathPoints[currentPointIndex + 1];
-  mesh.position.lerp(targetPosition, 0.1);
+var bounceInterval = 0.01; // Khoảng thời gian giữa mỗi khung hình
+function generateRandomPath() {
+	pathPoints = []
+    var numPoints = Math.floor(Math.random() * (20 - 3 + 1)) + 3; // Số lượng điểm trên đường đi
+    var maxX = 500; // Giới hạn tọa độ x tối đa
+    var maxZ = 500; // Giới hạn tọa độ z tối đa
 
-  // Tính toán vị trí y của đối tượng dựa trên thời gian đã trôi qua và độ cao nảy lò xo
-  let bounceY = Math.abs(Math.cos((bounceTime / bounceDuration) * Math.PI) * bounceHeight);
+    for (var i = 0; i < numPoints; i++) {
+        var x = Math.random() * (maxX * 2) - maxX;
+        var y = root.y;
+        var z = Math.random() * (maxZ * 2) - maxZ;
 
-  // Đặt vị trí y của đối tượng bằng tổng của vị trí y trên đường đi và độ cao nảy lò xo
-  mesh.position.y = targetPosition.y + bounceY;
-
-  // Tăng thời gian đã trôi qua cho nảy lò xo
-  bounceTime += 0.01;
-
-  // Kiểm tra nếu đã kết thúc thời gian nảy lò xo
-  if (bounceTime >= bounceDuration) {
-    bounceTime = 0; // Đặt lại thời gian nảy lò xo
-
-    currentPointIndex++;
-
-    // Kiểm tra nếu đối tượng đã đi qua toàn bộ đường đi, thì quay lại điểm đầu tiên
-    if (currentPointIndex >= pathPoints.length - 1) {
-      currentPointIndex = 0;
+        pathPoints.push(new THREE.Vector3(x, y, z));
     }
-  }
 
-  render();
-  animationID = requestAnimationFrame(animationBouncePath);
+    // Thêm điểm cuối trùng với điểm đầu để tạo vòng lặp
+    pathPoints.push(pathPoints[0]);
+}
+function animation6() {
+	generateRandomPath()
+	animationBouncePath();
+}
+function animationBouncePath() {
+	// Lấy vị trí hiện tại và vị trí tiếp theo trên đường đi
+	let currentPosition = pathPoints[currentPointIndex];
+	let nextPosition = pathPoints[currentPointIndex + 1];
+
+	// Tính toán tỉ lệ hoàn thành nảy lò xo
+	var progress = bounceTime / bounceDuration;
+
+	// Tính toán vị trí y của đối tượng dựa trên thời gian đã trôi qua và độ cao nảy lò xo
+	var bounceY = Math.abs(Math.cos(progress * Math.PI) * bounceHeight);
+
+	// Tính toán vị trí lerp (linear interpolation) trên trục x và z
+	var lerpedX = THREE.MathUtils.lerp(currentPosition.x, nextPosition.x, progress);
+	var lerpedZ = THREE.MathUtils.lerp(currentPosition.z, nextPosition.z, progress);
+
+	// Đặt vị trí của đối tượng
+	mesh.position.x = lerpedX;
+	mesh.position.y = currentPosition.y + bounceY;
+	mesh.position.z = lerpedZ;
+
+	// Tăng thời gian đã trôi qua cho nảy lò xo
+	bounceTime += bounceInterval;
+
+	// Kiểm tra nếu đã kết thúc thời gian nảy lò xo
+	if (bounceTime >= bounceDuration) {
+		bounceTime = 0; // Đặt lại thời gian nảy lò xo
+
+		currentPointIndex++;
+
+		// Kiểm tra nếu đối tượng đã đi qua toàn bộ đường đi, thì quay lại điểm đầu tiên
+		if (currentPointIndex >= pathPoints.length - 1) {
+			currentPointIndex = 0;
+		}
+	}
+	point.position.copy(mesh.position);
+
+	mesh.rotation.x = performance.now() * 0.001;
+	mesh.rotation.y = performance.now() * 0.001;
+	mesh.rotation.z = performance.now() * 0.001;
+	point.rotation.copy(mesh.rotation);
+
+	render();
+	animationID = requestAnimationFrame(animationBouncePath);
 }
 
 //Models
 
+var pivots = []; //lưu trữ các pivot (trục quay) của đối tượng.
+var animalLoader = new GLTFLoader(); //tải các mô hình GLTF
+var animalmesh;
 var animalmesh;
 function loadmodel(id){
 	
 	root = mesh.position.clone();
+	if(pre_material != null){
+		removeGeometry();
+	}
 	scene.add(hemiLight);
+	if(typeModel == 3){
+		scene.remove(water);
+		scene.remove(sky);
+		scene.add(Grid);
+		scene.add(background_galaxy);
+	}
 	
 	let pivot = new THREE.Group();
 	
@@ -916,7 +1130,7 @@ function loadmodel(id){
 			break;
 		case 3:
 			scene.remove(Grid);
-			scene.remove(background_points);
+			scene.remove(background_galaxy);
 			scene.add(water);
 			scene.add(sky);
 			updateSun();
@@ -954,13 +1168,14 @@ function loadmodel(id){
 				scene.remove(pivots[i]);
 			pivots = [];
 			scene.add(Grid);
-			scene.add(background_points);
+			scene.add(background_galaxy);
 			scene.remove(water);
 			scene.remove(sky);
 			render();
 			break;
 	
 	}
+	typeModel = id;
 }
 
 window.loadmodel = loadmodel;
