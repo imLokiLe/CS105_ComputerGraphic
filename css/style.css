@@ -1,0 +1,143 @@
+* {
+    font-family: 'Krona One', sans-serif;
+}
+
+.nav-link {
+    margin-left: 1.25rem;
+    margin-right: 1.25rem;
+    color: #fcd34dcd;
+}
+.nav-link:hover{
+    color: #ffc400 !important;
+}
+.transform {
+    position: relative;
+    top: 100px;
+    z-index: 1;
+}
+
+.control {
+    position: relative;
+    top: 68px;
+    z-index: 9999;
+}
+
+#rendering {
+    position: absolute;
+    z-index: 1;
+}
+
+.dropdown-menu {
+    background-color: #EAEBED !important;
+}
+
+.dropdown .dropdown-menu a:hover {
+    background-color: #256196 !important;
+    color: #fcd34d;
+}
+
+.dg.main.taller-than-window .close-button {
+    border-top: 1px solid #ddd !important;
+}
+
+.dg.main .close-button {
+    background-color: #EAEBED !important;
+}
+
+.dg.main .close-button:hover {
+    background-color: #ddd !important;
+}
+
+.dg {
+    color: #555 !important;
+    text-shadow: none !important;
+}
+
+.dg.main::-webkit-scrollbar {
+    background: #EAEBED !important;
+}
+
+.dg.main::-webkit-scrollbar-thumb {
+    background: #bbb !important;
+}
+
+.dg li:not(.folder) {
+    background: #EAEBED !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+.dg li.save-row .button {
+    text-shadow: none !important;
+}
+
+.dg li.title {
+    background: #EAEBED url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlI+hKgFxoCgAOw==) 6px 10px no-repeat !important;
+}
+
+.dg .cr.function:hover,
+.dg .cr.boolean:hover {
+    background: #EAEBED !important;
+}
+
+.dg .c input[type=text] {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .c input[type=text]:hover {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .c input[type=text]:focus {
+    background: #EAEBED;
+    color: #555 !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .c .slider {
+    background: #EAEBED !important;
+}
+
+.dg .c .slider:hover {
+    background: #EAEBED !important;
+}
+
+.dg .cr.number input[type=text] {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .cr.number input[type=text]:hover {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .cr.number input[type=text]:focus {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .cr.string input[type=text] {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .cr.string input[type=text]:hover {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dg .cr.string input[type=text]:focus {
+    background: #EAEBED;
+    margin: 0px !important;
+    padding: 0px !important;
+}

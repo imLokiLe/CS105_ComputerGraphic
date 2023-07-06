@@ -1,0 +1,11 @@
+Model Information:
+* title:	Salyut 7
+* source:	https://sketchfab.com/3d-models/salyut-7-818ffb07179f4bbcb61c9c1712e07299
+* author:	uperesito (https://sketchfab.com/uperesito)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Salyut 7" (https://sketchfab.com/3d-models/salyut-7-818ffb07179f4bbcb61c9c1712e07299) by uperesito (https://sketchfab.com/uperesito) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
